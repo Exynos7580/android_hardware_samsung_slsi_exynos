@@ -145,7 +145,6 @@ static int gralloc_map(gralloc_module_t const* module, buffer_handle_t handle)
         return 0;
     }
 
-    if (!(hnd->flags & GRALLOC_USAGE_PROTECTED) && !(hnd->flags & GRALLOC_USAGE_NOZEROED)) {
         void* mappedAddress = mmap(0, hnd->size, PROT_READ|PROT_WRITE, MAP_SHARED,
                                    hnd->fd, 0);
         if (mappedAddress == MAP_FAILED) {
@@ -170,8 +169,6 @@ static int gralloc_map(gralloc_module_t const* module, buffer_handle_t handle)
                 ion_sync_fd(getIonFd(module), hnd->fd2);
             }
         }
-    }
-
     return 0;
 }
 
