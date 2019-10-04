@@ -24,18 +24,18 @@ LOCAL_SHARED_LIBRARIES := liblog libutils libcutils libexynosutils libexynosv4l2
 
 LOCAL_C_INCLUDES := \
 	$(LOCAL_PATH)/../include \
-        $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include \
 	$(TOP)/hardware/samsung_slsi/exynos5/include \
 	$(TOP)/hardware/samsung_slsi/exynos/libexynosutils \
 	$(TOP)/hardware/samsung_slsi/exynos/libmpp
 
-LOCAL_ADDITIONAL_DEPENDENCIES := \
-        $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr
-
+LOCAL_HEADER_LIBRARIES := generated_kernel_headers
 
 LOCAL_SRC_FILES := \
 	libgscaler_obj.cpp \
 	libgscaler.cpp
+
+LOCAL_CFLAGS += -Wno-unused-variable -Wno-parentheses-equality -Wno-unused-parameter
+
 
 LOCAL_MODULE_TAGS := eng
 LOCAL_MODULE := libexynosgscaler

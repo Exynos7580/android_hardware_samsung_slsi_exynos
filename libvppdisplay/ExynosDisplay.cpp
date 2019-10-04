@@ -65,7 +65,7 @@ void ExynosDisplay::dumpConfig(decon_win_config &c)
                 c.dst.f_w, c.dst.f_h, c.dst.x, c.dst.y, c.dst.w, c.dst.h,
                 c.format, c.blending, c.protection,
                 c.transparent_area.x, c.transparent_area.y, c.transparent_area.w, c.transparent_area.h,
-                c.covered_opaque_area.x, c.covered_opaque_area.y, c.covered_opaque_area.w, c.covered_opaque_area.h);
+                c.opaque_area.x, c.opaque_area.y, c.opaque_area.w, c.opaque_area.h);
     }
 }
 
@@ -85,7 +85,7 @@ void ExynosDisplay::dumpConfig(decon_win_config &c, android::String8& result)
                 c.dst.f_w, c.dst.f_h, c.dst.x, c.dst.y, c.dst.w, c.dst.h,
                 c.format, c.blending, c.protection,
                 c.transparent_area.x, c.transparent_area.y, c.transparent_area.w, c.transparent_area.h,
-                c.covered_opaque_area.x, c.covered_opaque_area.y, c.covered_opaque_area.w, c.covered_opaque_area.h);
+                c.opaque_area.x, c.opaque_area.y, c.opaque_area.w, c.opaque_area.h);
     }
 }
 
@@ -117,10 +117,6 @@ enum decon_pixel_format halFormatToS3CFormat(int format)
     case HAL_PIXEL_FORMAT_EXYNOS_YCbCr_420_SP_M_PRIV:
     case HAL_PIXEL_FORMAT_EXYNOS_YCbCr_420_SP_M_S10B:
         return DECON_PIXEL_FORMAT_NV12M;
-    case HAL_PIXEL_FORMAT_EXYNOS_YCbCr_420_SPN_S10B:
-        return DECON_PIXEL_FORMAT_NV12N_10B;
-    case HAL_PIXEL_FORMAT_EXYNOS_YCbCr_420_SPN:
-        return DECON_PIXEL_FORMAT_NV12N;
     default:
         return DECON_PIXEL_FORMAT_MAX;
     }
@@ -153,10 +149,6 @@ int S3CFormatToHalFormat(enum decon_pixel_format format)
     /* HAL_PIXEL_FORMAT_EXYNOS_YCbCr_420_SP_M_PRIV, HAL_PIXEL_FORMAT_EXYNOS_YCbCr_420_SP_M_S10B */
     case DECON_PIXEL_FORMAT_NV12M:
         return HAL_PIXEL_FORMAT_EXYNOS_YCbCr_420_SP_M;
-    case DECON_PIXEL_FORMAT_NV12N:
-        return HAL_PIXEL_FORMAT_EXYNOS_YCbCr_420_SPN;
-    case DECON_PIXEL_FORMAT_NV12N_10B:
-        return HAL_PIXEL_FORMAT_EXYNOS_YCbCr_420_SPN_S10B;
     default:
         return -1;
     }
@@ -451,12 +443,12 @@ int ExynosDisplay::set(hwc_display_contents_1_t *contents)
 #if defined(USES_DUAL_DISPLAY)
     }
 #endif
-
     return err;
 }
 
 void ExynosDisplay::dupFence(int fence, hwc_display_contents_1_t *contents)
 {
+
     if (contents == NULL)
         return;
 
@@ -468,8 +460,9 @@ void ExynosDisplay::dupFence(int fence, hwc_display_contents_1_t *contents)
 
         if ((mVirtualOverlayFlag == true) && (layer.compositionType == HWC_OVERLAY) &&
                 ((handle != NULL) && (getDrmMode(handle->flags) == NO_DRM)) &&
-                (mFirstFb <= i) && (i <= mLastFb))
+                (mFirstFb <= i) && (i <= mLastFb)) {
             continue;
+	}
 
         if (!(layer.flags & HWC_SKIP_RENDERING) && ((layer.compositionType == HWC_OVERLAY) ||
                     ((mFbNeeded == true || this->mVirtualOverlayFlag) && layer.compositionType == HWC_FRAMEBUFFER_TARGET))) {
@@ -513,6 +506,7 @@ void ExynosDisplay::dupFence(int fence, hwc_display_contents_1_t *contents)
 #else
     contents->retireFenceFd = fence;
 #endif
+
 }
 
 void ExynosDisplay::dump(android::String8& result)
@@ -1778,7 +1772,7 @@ int ExynosDisplay::handleWindowUpdate(hwc_display_contents_1_t __unused *content
         (config[winUpdateInfoIdx].dst.w != (uint32_t)mXres) || (config[winUpdateInfoIdx].dst.h != (uint32_t)mXres)) {
         for (size_t i = 0; i < NUM_HW_WINDOWS; i++) {
             memset(&config[i].transparent_area, 0, sizeof(config[i].transparent_area));
-            memset(&config[i].covered_opaque_area, 0, sizeof(config[i].covered_opaque_area));
+            memset(&config[i].opaque_area, 0, sizeof(config[i].opaque_area));
         }
     }
 
@@ -1857,6 +1851,7 @@ int ExynosDisplay::postFrame(hwc_display_contents_1_t* contents)
     int tot_ovly_wins = 0;
     uint32_t rectCount = 0;
     int ret = 0;
+
 
     memset(mLastHandles, 0, sizeof(mLastHandles));
     memset(mLastMPPMap, 0, sizeof(mLastMPPMap));
@@ -1998,16 +1993,12 @@ int ExynosDisplay::postFrame(hwc_display_contents_1_t* contents)
                 dumpLayerInfo(result);
         }
 
-        if (checkConfigChanged(*mWinData, mLastConfigData) == false) {
-            ret = 0;
+        ret = winconfigIoctl(mWinData);
+        if (ret < 0) {
+            DISPLAY_LOGE("ioctl S3CFB_WIN_CONFIG failed: %s", strerror(errno));
         } else {
-            ret = winconfigIoctl(mWinData);
-            if (ret < 0) {
-                DISPLAY_LOGE("ioctl S3CFB_WIN_CONFIG failed: %s", strerror(errno));
-            } else {
-                ret = mWinData->fence;
-                memcpy(&(this->mLastConfigData), mWinData, sizeof(*mWinData));
-            }
+            ret = mWinData->fence;
+            memcpy(&(this->mLastConfigData), mWinData, sizeof(*mWinData));
         }
 
         /*

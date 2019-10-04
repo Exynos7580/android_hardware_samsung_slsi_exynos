@@ -30,13 +30,11 @@ endif
 MALI_AFBC_GRALLOC := 1
 
 LOCAL_C_INCLUDES := \
-        $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include \
 	$(LOCAL_PATH)/../include \
 	$(TOP)/hardware/samsung_slsi/exynos/include \
 	$(TOP)/hardware/samsung_slsi/exynos5/include
 
-LOCAL_ADDITIONAL_DEPENDENCIES := \
-        $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr
+LOCAL_HEADER_LIBRARIES := generated_kernel_headers
 
 LOCAL_SRC_FILES := 	\
 	format_chooser.cpp \
@@ -45,7 +43,7 @@ LOCAL_SRC_FILES := 	\
 	mapper.cpp
 
 LOCAL_MODULE := gralloc.$(TARGET_BOARD_PLATFORM)
-LOCAL_CFLAGS += -DLOG_TAG=\"gralloc\" -Wno-missing-field-initializers -DMALI_AFBC_GRALLOC=$(MALI_AFBC_GRALLOC)
+LOCAL_CFLAGS += -DLOG_TAG=\"gralloc\" -Wno-gnu-designator -Wno-unused-parameter -Wno-reorder -Wno-missing-field-initializers -DMALI_AFBC_GRALLOC=$(MALI_AFBC_GRALLOC)
 
 ifeq ($(BOARD_USES_EXYNOS5_GRALLOC_RANGE_FLUSH), true)
 LOCAL_CFLAGS += -DGRALLOC_RANGE_FLUSH

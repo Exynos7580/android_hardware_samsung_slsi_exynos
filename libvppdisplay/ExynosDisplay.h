@@ -1,6 +1,9 @@
 #ifndef EXYNOS_DISPLAY_H
 #define EXYNOS_DISPLAY_H
 
+
+#undef LOG_NDEBUG
+#define LOG_NDEBUG 0
 #include <utils/Mutex.h>
 #include <utils/Vector.h>
 #include <utils/String8.h>
@@ -10,6 +13,8 @@
 class ExynosMPPModule;
 
 #define HWC_SKIP_RENDERING 0x80000000
+#define HWC_SET_OPAQUE  0x00000020
+
 enum {
     eSkipLayer                    =     0x00000001,
     eUnsupportedPlaneAlpha        =     0x00000002,

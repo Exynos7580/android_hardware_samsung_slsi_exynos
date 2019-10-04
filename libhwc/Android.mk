@@ -29,7 +29,7 @@ LOCAL_PRELINK_MODULE := false
 LOCAL_MODULE_RELATIVE_PATH := hw
 LOCAL_SHARED_LIBRARIES := liblog libcutils libEGL libGLESv1_CM libhardware \
 	libhardware_legacy libutils libsync \
-	libexynosv4l2 libexynosutils libhwcutils libdisplay libhdmi \
+	libexynosv4l2 libexynosutils libhwcutils libexynosdisplay libhdmi \
 	libmpp
 #libMcClient
 
@@ -95,7 +95,6 @@ LOCAL_CFLAGS += -DLOG_TAG=\"hwcomposer\"
 LOCAL_CFLAGS += -DHLOG_CODE=0
 
 LOCAL_C_INCLUDES += \
-        $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include \
 	$(TOP)/hardware/samsung_slsi/$(TARGET_SOC)/include \
 	$(TOP)/hardware/samsung_slsi/$(TARGET_BOARD_PLATFORM)/include \
 	$(LOCAL_PATH)/../include \
@@ -108,9 +107,7 @@ LOCAL_C_INCLUDES += \
 	$(TOP)/hardware/samsung_slsi/$(TARGET_SOC)/libhwcutilsmodule \
 	$(TOP)/hardware/samsung_slsi/exynos/libmpp
 
-LOCAL_ADDITIONAL_DEPENDENCIES := \
-        $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr
-
+LOCAL_HEADER_LIBRARIES := generated_kernel_headers
 
 ifeq ($(BOARD_USES_VPP), true)
 LOCAL_C_INCLUDES += $(LOCAL_PATH)/../libvppdisplay
@@ -119,6 +116,8 @@ LOCAL_C_INCLUDES += $(LOCAL_PATH)/../libdisplay
 endif
 
 LOCAL_SRC_FILES := ExynosHWC.cpp
+
+LOCAL_CFLAGS += -Wno-unused-variable -Wno-parentheses-equality -Wno-reorder -Wno-unused-parameter -Wno-unused-function -Wno-sign-compare -Wno-format -Wno-gnu-designator
 
 LOCAL_MODULE := hwcomposer.$(TARGET_BOARD_PLATFORM)
 LOCAL_MODULE_TAGS := optional
