@@ -1563,9 +1563,9 @@ int ExynosCameraNode::m_dqBuf(ExynosCameraBuffer *buf, int *dqIndex)
     m_nodeRequest.setState(NODE_REQUEST_STATE_DQBUF_BLOCK);
 
 #ifdef EXYNOS_CAMERA_NODE_TRACE
-    CLOGD("DEBUG(%s[%d]):name(%s) fd %d",
+    CLOGD("DEBUG(%s[%d]):name(%s) fd %d v4l2_buf.type=%d v4l2_buf.m.planes=%d v4l2_buf.length=%d",
         __FUNCTION__, __LINE__,
-        m_name, m_fd);
+        m_name, m_fd,v4l2_buf.type,v4l2_buf.m.planes,v4l2_buf.length);
 #endif
 
 #ifdef EXYNOS_CAMERA_NODE_TRACE_DQ_DURATION

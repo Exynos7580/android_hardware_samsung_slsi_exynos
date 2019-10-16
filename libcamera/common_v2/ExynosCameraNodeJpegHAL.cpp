@@ -166,7 +166,7 @@ status_t ExynosCameraNodeJpegHAL::open(int videoNodeNum, bool useThumbnailHWFC)
             return ret;
         }
 
-        m_jpegEncoder->EnableHWFC();
+        //m_jpegEncoder->EnableHWFC();
         /*
         if (ret != NO_ERROR) {
             CLOGE("ERR(%s[%d]):ExynosJpegEncoderForCamera Enable HWFC fail, ret(%d)",
@@ -352,6 +352,7 @@ status_t ExynosCameraNodeJpegHAL::setQuality(int quality)
     return ret;
 }
 
+/*
 status_t ExynosCameraNodeJpegHAL::setQuality(const unsigned char qtable[])
 {
     EXYNOS_CAMERA_NODE_IN();
@@ -390,7 +391,7 @@ status_t ExynosCameraNodeJpegHAL::setQuality(const unsigned char qtable[])
 
     return ret;
 }
-
+*/
 status_t ExynosCameraNodeJpegHAL::setSize(int w, int h)
 {
     EXYNOS_CAMERA_NODE_IN();
@@ -597,9 +598,6 @@ status_t ExynosCameraNodeJpegHAL::putBuffer(ExynosCameraBuffer *buf)
         case FIMC_IS_VIDEO_HWFC_JPEG_NUM:
             ret = m_jpegEncoder->setInBuf((int *)&(buf->fd), (int *)buf->size);
             break;
-        case FIMC_IS_VIDEO_HWFC_THUMB_NUM:
-            ret = m_jpegEncoder->setInBuf2((int *)&(buf->fd), (int *)buf->size);
-            break;
         default:
             CLOGE("ERR(%s[%d]):Invalid node num(%d)", __FUNCTION__, __LINE__, ret);
             break;
@@ -669,18 +667,18 @@ status_t ExynosCameraNodeJpegHAL::getBuffer(ExynosCameraBuffer *buf, int *dqInde
         *dqIndex = m_srcBuffer.index;
     } else {
         if (m_videoNodeNum == FIMC_IS_VIDEO_HWFC_JPEG_NUM) {
-            ssize_t jpegSize = -1;
+            ssize_t jpegSize = 0;
             /* Blocking function.
              * This function call is returned when JPEG encoding operation is finished.
              */
             CLOGI("INFO(%s[%d]):WaitForCompression. bufferIndex %d",
                     __FUNCTION__, __LINE__, m_dstBuffer.index);
-            jpegSize = m_jpegEncoder->WaitForCompression();
-            if (jpegSize < 0) {
-                CLOGE("ERR(%s[%d]):Failed to JPEG Encoding. bufferIndex %d jpegSize %ld",
-                        __FUNCTION__, __LINE__, m_dstBuffer.index, jpegSize);
-                ret = INVALID_OPERATION;
-            }
+            //jpegSize = m_jpegEncoder->WaitForCompression();
+            //if (jpegSize < 0) {
+            //    CLOGE("ERR(%s[%d]):Failed to JPEG Encoding. bufferIndex %d jpegSize %ld",
+            //            __FUNCTION__, __LINE__, m_dstBuffer.index, jpegSize);
+            //    ret = INVALID_OPERATION;
+            //}
             m_dstBuffer.size[0] = jpegSize;
         }
         *buf = m_dstBuffer;

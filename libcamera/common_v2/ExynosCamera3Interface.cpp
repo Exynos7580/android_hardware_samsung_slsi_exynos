@@ -371,7 +371,7 @@ static void HAL3_camera_device_dump(const struct camera3_device *dev, int fd)
 static int HAL_getNumberOfCameras()
 {
     /* ExynosCameraAutoTimer autoTimer(__FUNCTION__); */
-    int getNumOfCamera = sizeof(sCameraInfo) / sizeof(sCameraInfo[0]);
+    int getNumOfCamera = 2;
     ALOGV("DEBUG(%s[%d]):Number of cameras(%d)", __FUNCTION__, __LINE__, getNumOfCamera);
     return getNumOfCamera;
 }
@@ -388,10 +388,19 @@ static int HAL_getCameraInfo(int cameraId, struct camera_info *info)
     }
 
     /* set facing and orientation */
-    memcpy(info, &sCameraInfo[cameraId], sizeof(CameraInfo));
+    //memcpy(info, &sCameraInfo[cameraId], sizeof(CameraInfo));
 
     /* set device API version */
     info->device_version = CAMERA_DEVICE_API_VERSION_3_3;
+
+    if (cameraId == 0) {
+        info->facing = CAMERA_FACING_BACK;
+	info->orientation = BACK_ROTATION;
+    }
+    else {
+        info->facing = CAMERA_FACING_FRONT;
+	info->orientation = FRONT_ROTATION;
+    }
 
     /* set camera_metadata_t if needed */
     if (info->device_version >= HARDWARE_DEVICE_API_VERSION(2, 0)) {
@@ -653,7 +662,7 @@ static int HAL_camera_device_open(
         return -1;
     }
 
-    if ((unsigned int)cameraId < (sizeof(sCameraInfo) / sizeof(sCameraInfo[0]))) {
+    if ((unsigned int)cameraId < 2) {
         if (g_cam_device[cameraId]) {
             ALOGE("DEBUG(%s):returning existing camera ID %s", __FUNCTION__, id);
             *device = (hw_device_t *)g_cam_device[cameraId];

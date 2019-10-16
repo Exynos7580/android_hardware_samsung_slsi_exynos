@@ -380,7 +380,7 @@ status_t ExynosCameraPipe::startThread(void)
 
     m_timer.start();
     if (m_mainThread->isRunning() == false) {
-        m_mainThread->run("ExynoCamera3");
+        m_mainThread->run();
         CLOGI("INFO(%s[%d]):startThread is succeed (%d)", __FUNCTION__, __LINE__, getPipeId());
     } else {
         CLOGW("WRN(%s[%d]):startThread is already running (%d)", __FUNCTION__, __LINE__, getPipeId());

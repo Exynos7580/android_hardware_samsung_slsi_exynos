@@ -1635,6 +1635,8 @@ bool ExynosCamera::m_autoFocusThreadFunc(void)
         return false;
     }
 
+    ExynosCameraActivityAutofocus *autoFocusMgr = m_exynosCameraActivityControl->getAutoFocusMgr();
+
     if (m_autoFocusType == AUTO_FOCUS_SERVICE) {
         focusMode = m_parameters->getFocusMode();
     } else if (m_autoFocusType == AUTO_FOCUS_HAL) {
@@ -1652,15 +1654,7 @@ bool ExynosCamera::m_autoFocusThreadFunc(void)
     m_autoFocusLock.lock();
     m_autoFocusRunning = true;
 
-    if (m_autoFocusRunning == true) {
-        afResult = m_exynosCameraActivityControl->autoFocus(focusMode, m_autoFocusType);
-        if (afResult == true)
-            CLOGV("DEBUG(%s):autoFocus Success!!", __FUNCTION__);
-        else
-            CLOGV("DEBUG(%s):autoFocus Fail !!", __FUNCTION__);
-    } else {
-        CLOGV("DEBUG(%s):autoFocus canceled !!", __FUNCTION__);
-    }
+    afResult = m_exynosCameraActivityControl->autoFocus(focusMode, m_autoFocusType);
 
     /*
      * CAMERA_MSG_FOCUS only takes a bool.  true for
@@ -1674,14 +1668,16 @@ bool ExynosCamera::m_autoFocusThreadFunc(void)
             int afFinalResult = (int)afResult;
 
             /* if inactive detected, tell it */
-            if (focusMode == FOCUS_MODE_CONTINUOUS_PICTURE) {
-                if (m_exynosCameraActivityControl->getCAFResult() == 2) {
-                    afFinalResult = 2;
-                }
-            }
+            //if (focusMode == FOCUS_MODE_CONTINUOUS_PICTURE && getSamsungCamera()) {
+            //    if (m_exynosCameraActivityControl->getCAFResult() == 2) {
+            //        afFinalResult = 2;
+            //    }
+            //}
 
             CLOGD("DEBUG(%s):CAMERA_MSG_FOCUS(%d) mode(%d)", __FUNCTION__, afFinalResult, focusMode);
+            m_autoFocusLock.unlock();
             m_notifyCb(CAMERA_MSG_FOCUS, afFinalResult, 0, m_callbackCookie);
+	    m_autoFocusLock.lock();
         }  else {
             CLOGD("DEBUG(%s):m_notifyCb is NULL mode(%d)", __FUNCTION__, focusMode);
         }
@@ -1689,6 +1685,7 @@ bool ExynosCamera::m_autoFocusThreadFunc(void)
         CLOGV("DEBUG(%s):autoFocus canceled, no callback !!", __FUNCTION__);
     }
 
+    //autoFocusMgr->displayAFInfo();
     m_autoFocusRunning = false;
 
     CLOGV("DEBUG(%s):exiting with no error", __FUNCTION__);
@@ -2658,8 +2655,11 @@ void ExynosCamera::stopPreview()
 
         m_autoFocusContinousThread->stop();
         m_autoFocusContinousQ.sendCmd(WAKE_UP);
+	ALOGI("m_autoFocusContinousThread->requestExitAndWait+++");
         m_autoFocusContinousThread->requestExitAndWait();
         m_autoFocusContinousQ.release();
+        ALOGI("m_autoFocusContinousThread->requestExitAndWait---");
+
 
         m_facedetectThread->stop();
         m_facedetectQ->sendCmd(WAKE_UP);
@@ -7241,11 +7241,11 @@ bool ExynosCamera::m_postPictureThreadFunc(void)
 #endif
 
                 /* in case OTF until JPEG, we should overwrite debugData info to Jpeg data. */
-                if (jpegReprocessingBuffer.size[0] != 0) {
-                    UpdateDebugData(jpegReprocessingBuffer.addr[0],
-                                    jpegReprocessingBuffer.size[0],
-                                    m_parameters->getDebugAttribute());
-                }
+                //if (jpegReprocessingBuffer.size[0] != 0) {
+                //    UpdateDebugData(jpegReprocessingBuffer.addr[0],
+                //                    jpegReprocessingBuffer.size[0],
+                //                    m_parameters->getDebugAttribute());
+                //}
             } else {
                 int retry = 0;
 

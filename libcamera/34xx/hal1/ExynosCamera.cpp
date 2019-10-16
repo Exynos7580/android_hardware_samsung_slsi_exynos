@@ -20,7 +20,7 @@
 #include <cutils/log.h>
 
 #include "ExynosCamera.h"
-
+#include "ExynosCameraBufferManager.h"
 namespace android {
 
 #ifdef MONITOR_LOG_SYNC
@@ -31,7 +31,7 @@ ExynosCamera::ExynosCamera(int cameraId, camera_device_t *dev)
 {
     ExynosCameraActivityUCTL *uctlMgr = NULL;
 
-    //BUILD_DATE();
+    BUILD_DATE();
 
     checkAndroidVersion();
 
@@ -2486,17 +2486,20 @@ bool ExynosCamera::m_mainThreadFunc(void)
     m_frameFliteDeleteBetweenPreviewReprocessing.unlock();
 #endif
 
-
     /*
      * HACK
      * By using MCpipe. we don't use seperated pipe_scc.
      * so, we will not meet inputFrameQ's fail issue.
      */
-    /* m_checkFpsAndUpdatePipeWaitTime(); */
+    // m_checkFpsAndUpdatePipeWaitTime();
 
     if(getCameraId() == CAMERA_ID_BACK) {
-        m_autoFocusContinousQ.pushProcessQ(&frameCnt);
+	//if (m_parameters->getFrameSkipCount() <= 0) {
+		//ALOGI("SSSSS m_autoFocusContinousQ.pushProcessQ(%d)",frameCnt);
+        	m_autoFocusContinousQ.pushProcessQ(&frameCnt);
+	//}
     }
+
 
     return true;
 }

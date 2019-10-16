@@ -102,7 +102,7 @@ status_t ExynosCameraPipeGSC::startThread(void)
         return INVALID_OPERATION;
     }
 
-    m_mainThread->run("ExynosCmera5");
+    m_mainThread->run();
 
     CLOGI("INFO(%s[%d]):startThread is succeed (%d)", __FUNCTION__, __LINE__, getPipeId());
 
@@ -147,7 +147,7 @@ status_t ExynosCameraPipeGSC::m_run(void)
     }
 
     rotation = newFrame->getRotation(getPipeId());
-    CLOGV("INFO(%s[%d]): getPipeId(%d), rotation(%d)", __FUNCTION__, __LINE__, getPipeId(), rotation);
+    CLOGI("INFO(%s[%d]): getPipeId(%d), rotation(%d)", __FUNCTION__, __LINE__, getPipeId(), rotation);
 
 #ifdef PERFRAME_CONTROL_FOR_FLIP
     flipHorizontal = newFrame->getFlipHorizontal(getPipeId());
@@ -205,10 +205,10 @@ status_t ExynosCameraPipeGSC::m_run(void)
     if (csc_convert_with_rotation(m_csc, rotation, flipHorizontal, flipVertical) != 0)
         CLOGE("ERR(%s):csc_convert() fail", __FUNCTION__);
 
-    CLOGV("DEBUG(%s[%d]):Rotation(%d), flip horizontal(%d), vertical(%d)",
+    CLOGI("DEBUG(%s[%d]):Rotation(%d), flip horizontal(%d), vertical(%d)",
             __FUNCTION__, __LINE__, rotation, flipHorizontal, flipVertical);
 
-    CLOGV("DEBUG(%s[%d]):CSC(%d) converting done", __FUNCTION__, __LINE__, m_gscNum);
+    CLOGI("DEBUG(%s[%d]):CSC(%d) converting done", __FUNCTION__, __LINE__, m_gscNum);
 
     ret = newFrame->setEntityState(getPipeId(), ENTITY_STATE_FRAME_DONE);
     if (ret < 0) {

@@ -58,7 +58,7 @@ ExynosCameraActivityAutofocus::ExynosCameraActivityAutofocus()
     m_flagFaceDetection = false;
     m_macroPosition = AUTOFOCUS_MACRO_POSITION_BASE;
     m_fpsValue = 0;
-    m_samsungCamera = false;
+    m_samsungCamera = true;
     m_afInMotionResult = false;
 
     m_af_mode_info = 0;

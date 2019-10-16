@@ -340,11 +340,11 @@ ExynosCameraFrame *ExynosCamera3FrameFactoryPreview::createNewFrame(uint32_t fra
 {
     int ret = 0;
     ExynosCameraFrameEntity *newEntity[MAX_NUM_PIPES] = {0};
-    if (frameCount <= 0) {
-        frameCount = m_frameCount;
-    }
+//    if (frameCount <= 0) {
+  //      frameCount = m_frameCount;
+ //   }
 
-    ExynosCameraFrame *frame = m_frameMgr->createFrame(m_parameters, frameCount, FRAME_TYPE_PREVIEW);
+    ExynosCameraFrame *frame = m_frameMgr->createFrame(m_parameters, m_frameCount, FRAME_TYPE_PREVIEW);
 
     int requestEntityCount = 0;
     bool dzoomScaler = false;

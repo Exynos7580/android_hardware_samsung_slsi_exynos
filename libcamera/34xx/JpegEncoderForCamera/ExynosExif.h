@@ -1,6 +1,6 @@
 /*
  * Copyright Samsung Electronics Co.,LTD.
- * Copyright (C) 2015 The Android Open Source Project
+ * Copyright (C) 2010 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,16 +14,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-// To prevent build conflict with the previous libhwjpeg
-#ifdef USES_UNIVERSAL_LIBHWJPEG
-
-#ifndef __HARDWARE_EXYNOS_EXYNOS_EXIF_H__
-#define __HARDWARE_EXYNOS_EXYNOS_EXIF_H__
+#ifndef EXYNOS_EXIF_H_
+#define EXYNOS_EXIF_H_
 
 #include <math.h>
-
-#include <sys/types.h>
 
 #define EXIF_LOG2(x)                    (log((double)(x)) / log(2.0))
 #define APEX_FNUM_TO_APERTURE(x)        ((EXIF_LOG2((double)(x))) * 2.0)
@@ -38,7 +32,7 @@
 #define EXIF_INFO_LIMIT_SIZE        12288
 
 #define NUM_0TH_IFD_TIFF            10
-#define NUM_0TH_IFD_EXIF            29
+#define NUM_0TH_IFD_EXIF            26
 #define NUM_0TH_IFD_INTEROPERABILITY (2)
 #define NUM_0TH_IFD_GPS             10
 #define NUM_1TH_IFD_TIFF            9
@@ -85,9 +79,6 @@
 #define EXIF_TAG_FOCAL_LENGTH                   0x920A
 #define EXIF_TAG_MAKER_NOTE                     0x927C
 #define EXIF_TAG_USER_COMMENT                   0x9286
-#define EXIF_TAG_SUBSEC_TIME                    0x9290
-#define EXIF_TAG_SUBSEC_TIME_ORIG               0x9291
-#define EXIF_TAG_SUBSEC_TIME_DIG                0x9292
 #define EXIF_TAG_COLOR_SPACE                    0xA001
 #define EXIF_TAG_PIXEL_X_DIMENSION              0xA002
 #define EXIF_TAG_PIXEL_Y_DIMENSION              0xA003
@@ -163,15 +154,15 @@ typedef enum {
     EXIF_WB_CLOUDY,
 } CamExifWhiteBalanceType;
 
+
 /* Values */
-#define EXIF_DEF_MAKER          "Samsung Electronics Co., Ltd."    /* testJpegExif on the CTS test. This should match Build.MANUFACTURER  */
+#define EXIF_DEF_MAKER          "SAMSUNG"
 #define EXIF_DEF_MODEL          "SAMSUNG"
 #define EXIF_DEF_SOFTWARE       "SAMSUNG"
 #define EXIF_DEF_EXIF_VERSION   "0220"
 #define EXIF_DEF_USERCOMMENTS   "User comments"
 
 #define EXIF_DEF_YCBCR_POSITIONING  1   /* centered */
-#define EXIF_DEF_EXPOSURE_MANUAL    1   /* manual program */
 #define EXIF_DEF_EXPOSURE_PROGRAM   2   /* normal program */
 #define EXIF_DEF_FLASH              0   /* O: off, 1: on*/
 #define EXIF_DEF_COLOR_SPACE        1
@@ -183,9 +174,6 @@ typedef enum {
 #define EXIF_DEF_RESOLUTION_NUM     72
 #define EXIF_DEF_RESOLUTION_DEN     1
 #define EXIF_DEF_RESOLUTION_UNIT    2   /* inches */
-
-#define APP_MARKER_4                4
-#define APP_MARKER_5                5
 
 typedef struct {
     uint32_t num;
@@ -201,11 +189,11 @@ typedef struct {
     bool enableGps;
     bool enableThumb;
 
-    char maker[32];
-    char model[32];
-    char software[32];
-    char exif_version[4];
-    char date_time[20];
+    unsigned char maker[32];
+    unsigned char model[32];
+    unsigned char software[32];
+    unsigned char exif_version[4];
+    unsigned char date_time[20];
     char sec_time[5];
     unsigned int  maker_note_size;
     unsigned char *maker_note;
@@ -230,7 +218,7 @@ typedef struct {
     uint16_t white_balance;
     uint16_t focal_length_in_35mm_length;
     uint16_t scene_capture_type;
-    char unique_id[30];
+    unsigned char unique_id[11];
 
     rational_t exposure_time;
     rational_t fnumber;
@@ -242,8 +230,8 @@ typedef struct {
     srational_t brightness;
     srational_t exposure_bias;
 
-    char gps_latitude_ref[2];
-    char gps_longitude_ref[2];
+    unsigned char gps_latitude_ref[2];
+    unsigned char gps_longitude_ref[2];
 
     uint8_t gps_version_id[4];
     uint8_t gps_altitude_ref;
@@ -252,8 +240,8 @@ typedef struct {
     rational_t gps_longitude[3];
     rational_t gps_altitude;
     rational_t gps_timestamp[3];
-    char gps_datestamp[11];
-    char gps_processing_method[100];
+    unsigned char gps_datestamp[11];
+    unsigned char gps_processing_method[100];
 
     rational_t x_resolution;
     rational_t y_resolution;
@@ -262,15 +250,14 @@ typedef struct {
 } exif_attribute_t;
 
 typedef struct {
+//    char *debugData;
+//    unsigned int debugSize;
     int num_of_appmarker; /* number of app marker */
     int idx[15][1]; /* idx[number_of_appmarker][appmarker_number] */
+
     char *debugData[15]; /* 0-base */
     unsigned int debugSize[15];
+
 } debug_attribute_t;
 
-bool UpdateDebugData(char *jpeg, size_t jpeglen, debug_attribute_t *debug);
-bool UpdateExif(char *jpeg, size_t jpeglen, exif_attribute_t *exif);
-
-#endif /* __HARDWARE_EXYNOS_EXYNOS_EXIF_H__ */
-
-#endif //USES_UNIVERSAL_LIBHWJPEG
+#endif /* EXYNOS_EXIF_H_ */

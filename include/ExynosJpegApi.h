@@ -1,6 +1,6 @@
 /*
  * Copyright Samsung Electronics Co.,LTD.
- * Copyright (C) 2015 The Android Open Source Project
+ * Copyright (C) 2012~2013 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,102 +15,170 @@
  * limitations under the License.
  */
 
-// To prevent build conflict with the previous libhwjpeg
-#ifdef USES_UNIVERSAL_LIBHWJPEG
+#ifndef __EXYNOS_JPEG_BASE_H__
+#define __EXYNOS_JPEG_BASE_H__
 
-#ifndef __HARDWARE_EXYNOS_EXYNOS_JPEG_API_H__
-#define __HARDWARE_EXYNOS_EXYNOS_JPEG_API_H__
+#include "videodev2.h"
+#include "videodev2_exynos_media.h"
 
-// Exynos HAL defines another version of videodev2 apart from the original one
-// This prevents conflict from the Exynos HAL from the original videodev2.h
-/*
-#ifndef v4l2_fourcc
-#include <videodev2.h>
-#endif
-*/
+#define JPEG_CACHE_OFF (0)
+#define JPEG_CACHE_ON (1)
 
-#include <exynos-hwjpeg.h>
+#define JPEG_BUF_TYPE_USER_PTR (1)
+#define JPEG_BUF_TYPE_DMA_BUF (2)
 
-#ifndef JPEG_CACHE_ON
-#define JPEG_CACHE_ON 1
-#endif
+class ExynosJpegBase {
+public:
+    #define JPEG_MAX_PLANE_CNT          (3)
+    ExynosJpegBase();
+    virtual ~ExynosJpegBase();
 
-#define JPEG_BUF_TYPE_USER_PTR 1
-#define JPEG_BUF_TYPE_DMA_BUF  2
-
-// CUSTOM V4L2 4CC FORMATS FOR LEGACY JPEG LIBRARY AND DRIVERS
-#ifndef V4L2_PIX_FMT_JPEG_444
-#define V4L2_PIX_FMT_JPEG_444 v4l2_fourcc('J', 'P', 'G', '4')
-#endif
-#ifndef V4L2_PIX_FMT_JPEG_422
-#define V4L2_PIX_FMT_JPEG_422 v4l2_fourcc('J', 'P', 'G', '2')
-#endif
-#ifndef V4L2_PIX_FMT_JPEG_420
-#define V4L2_PIX_FMT_JPEG_420 v4l2_fourcc('J', 'P', 'G', '0')
-#endif
-#ifndef V4L2_PIX_FMT_JPEG_GRAY
-#define V4L2_PIX_FMT_JPEG_GRAY v4l2_fourcc('J', 'P', 'G', 'G')
-#endif
-#ifndef V4L2_PIX_FMT_JPEG_422V
-#define V4L2_PIX_FMT_JPEG_422V v4l2_fourcc('J', 'P', 'G', '5')
-#endif
-#ifndef V4L2_PIX_FMT_JPEG_411
-#define V4L2_PIX_FMT_JPEG_411 v4l2_fourcc('J', 'P', 'G', '1')
-#endif
-
-class ExynosJpegEncoder {
-    /*
-     * ExynosJpedgEncoder class is actually a derived class of
-     * CHWJpegV4L2Compressor. But it is not derived from CHWJpegV4L2Compressor
-     * because it has a lot of virtual functions which require extra memory for
-     * vtables. Moreover, ExynosJpegEncoder class implements no virtual function
-     * of CHWJpegV4L2Compressor.
-     */
-    CHWJpegV4L2Compressor m_hwjpeg;
-
-    char m_iInBufType;
-    char m_iOutBufType;
-
-    unsigned int m_uiState;
-
-    int m_nQFactor;
-    int m_nWidth;
-    int m_nHeight;
-    int m_v4l2Format;
-    int m_jpegFormat;
-    int m_nStreamSize;
-
-    bool __EnsureFormatIsApplied();
-protected:
-    enum {
-        STATE_SIZE_CHANGED      = 1 << 0,
-        STATE_PIXFMT_CHANGED    = 1 << 1,
-        STATE_BASE_MAX          = 1 << 16,
+    enum ERROR_JPEG_HAL {
+        ERROR_JPEG_DEVICE_ALREADY_CREATE = -0x100,
+        ERROR_INVALID_JPEG_MODE,
+        ERROR_CANNOT_OPEN_JPEG_DEVICE,
+        ERROR_JPEG_DEVICE_ALREADY_CLOSED,
+        ERROR_JPEG_DEVICE_ALREADY_DESTROY,
+        ERROR_JPEG_DEVICE_NOT_CREATE_YET,
+        ERROR_INVALID_COLOR_FORMAT,
+        ERROR_INVALID_JPEG_FORMAT,
+        ERROR_INVALID_IMAGE_SIZE,
+        ERROR_JPEG_CONFIG_POINTER_NULL,
+        ERROR_INVALID_JPEG_CONFIG,
+        ERROR_IN_BUFFER_CREATE_FAIL,
+        ERROR_OUT_BUFFER_CREATE_FAIL,
+        ERROR_EXCUTE_FAIL,
+        ERROR_JPEG_SIZE_TOO_SMALL,
+        ERROR_CANNOT_CHANGE_CACHE_SETTING,
+        ERROR_SIZE_NOT_SET_YET,
+        ERROR_BUFFR_IS_NULL,
+        ERROR_BUFFER_TOO_SMALL,
+        ERROR_GET_SIZE_FAIL,
+        ERROR_BUF_NOT_SET_YET,
+        ERROR_REQBUF_FAIL,
+        ERROR_INVALID_V4l2_BUF_TYPE = -0x80,
+        ERROR_INVALID_SELECT,
+        ERROR_MMAP_FAILED,
+        ERROR_FAIL,
+        ERROR_NONE = 0
     };
 
-    unsigned int GetDeviceCapabilities() { return m_hwjpeg.GetDeviceCapabilities(); }
-    CHWJpegCompressor &GetCompressor() { return m_hwjpeg; }
-    unsigned int GetHWDelay() { return m_hwjpeg.GetHWDelay(); }
+    enum MODE {
+        MODE_ENCODE = 0,
+        MODE_DECODE
+    };
 
-    void SetState(unsigned int state) { m_uiState |= state; }
-    void ClearState(unsigned int state) { m_uiState &= ~state; }
-    bool TestState(unsigned int state) { return (m_uiState & state) == state; }
-    bool TestStateEither(unsigned int state) { return (m_uiState & state) != 0; }
+    struct BUFFER{
+        int     numOfPlanes;
+        int     i_addr[JPEG_MAX_PLANE_CNT];
+        char    *c_addr[JPEG_MAX_PLANE_CNT];
+        int     size[JPEG_MAX_PLANE_CNT];
+    };
 
-    virtual bool EnsureFormatIsApplied() { return __EnsureFormatIsApplied(); }
+    struct BUF_INFO{
+        int                 numOfPlanes;
+        enum v4l2_memory    memory;
+        enum v4l2_buf_type  buf_type;
+        int                 reserved[4];
+    };
+
+    struct PIX_FMT{
+        int in_fmt;
+        int out_fmt;
+        int reserved[4];
+    };
+
+    struct CONFIG{
+        int               mode;
+        int               enc_qual;
+        int               width;
+        int               height;
+        int               scaled_width;
+        int               scaled_height;
+        int               numOfPlanes;
+        int               sizeJpeg;
+        union {
+            PIX_FMT enc_fmt;
+            PIX_FMT dec_fmt;
+        } pix;
+        int              reserved[8];
+    };
+
+    int setSize(int iW, int iH);
+    int setCache(int iValue);
+    void *getJpegConfig(void);
+    int selectJpegHW(int iSel);
+    int ckeckJpegSelct(enum MODE eMode);
+
+protected:
+    bool t_bFlagCreate;
+    bool t_bFlagCreateInBuf;
+    bool t_bFlagCreateOutBuf;
+    bool t_bFlagExcute;
+    bool t_bFlagSelect;
+    int t_iCacheValue;
+    int t_iSelectNode;
+    int t_iPlaneNum;
+    int t_iJpegFd;
+
+    struct CONFIG t_stJpegConfig;
+    struct BUFFER t_stJpegInbuf;
+    struct BUFFER t_stJpegOutbuf;
+
+    int t_v4l2Querycap(int iFd);
+    int t_v4l2SetJpegcomp(int iFd, int iQuality);
+    int t_v4l2SetFmt(int iFd, enum v4l2_buf_type eType, struct CONFIG *pstConfig);
+    int t_v4l2GetFmt(int iFd, enum v4l2_buf_type eType, struct CONFIG *pstConfig);
+    int t_v4l2Reqbufs(int iFd, int iBufCount, struct BUF_INFO *pstBufInfo);
+    int t_v4l2Querybuf(int iFd, struct BUF_INFO *pstBufInfo, struct BUFFER *pstBuf);
+    int t_v4l2Qbuf(int iFd, struct BUF_INFO *pstBufInfo, struct BUFFER *pstBuf);
+    int t_v4l2Dqbuf(int iFd, enum v4l2_buf_type eType, enum v4l2_memory eMemory, int iNumPlanes);
+    int t_v4l2StreamOn(int iFd, enum v4l2_buf_type eType);
+    int t_v4l2StreamOff(int iFd, enum v4l2_buf_type eType);
+    int t_v4l2SetCtrl(int iFd, int iCid, int iValue);
+    int t_v4l2GetCtrl(int iFd, int iCid);
+
+    int create(enum MODE eMode);
+    int openJpeg(enum MODE eMode);
+    int openNode(enum MODE eMode);
+    int destroy(int iInBufs, int iOutBufs);
+    int setJpegConfig(enum MODE eMode, void *pConfig);
+    int setColorFormat(enum MODE eMode, int iV4l2ColorFormat);
+    int setJpegFormat(enum MODE eMode, int iV4l2JpegFormat);
+    int setColorBufSize(enum MODE eMode, int *piBufSize, int iSize);
+    int setColorBufSize(int iFormat, int *piBufSize, int iSize, int width, int height);
+
+    int checkBufType(struct BUFFER *pstBuf);
+    int getBufType(struct BUFFER *pstBuf);
+
+    int getBuf(bool bCreateBuf, struct BUFFER *pstBuf, int *piBuf, int *iBufSize, int iSize, int iPlaneNum);
+    int setBuf(struct BUFFER *pstBuf, int *piBuf, int *iSize, int iPlaneNum);
+
+    int getBuf(bool bCreateBuf, struct BUFFER *pstBuf, char **pcBuf, int *iBufSize, int iSize, int iPlaneNum);
+    int setBuf(struct BUFFER *pstBuf, char **pcBuf, int *iSize, int iPlaneNum);
+    int updateConfig(enum MODE eMode, int iInBufs, int iOutBufs, int iInBufPlanes, int iOutBufPlanes);
+    int execute(int iInBufPlanes, int iOutBufPlanes);
+};
+
+/*
+ * ExynosJpegEncoder class
+ */
+class ExynosJpegEncoder : public ExynosJpegBase {
 public:
     ExynosJpegEncoder();
-    virtual ~ExynosJpegEncoder() { destroy(); }
+    virtual ~ExynosJpegEncoder();
 
+    enum QUALITY {
+        QUALITY_LEVEL_1 = 0,    /* high */
+        QUALITY_LEVEL_2,
+        QUALITY_LEVEL_3,
+        QUALITY_LEVEL_4,
+        QUALITY_LEVEL_5,
+        QUALITY_LEVEL_6,        /* low */
+    };
 
-    // Return 0 on success, -1 on error
-    int flagCreate();
-    virtual int create(void);
-    virtual int destroy(void);
-    int updateConfig(void);
-    int setCache(int val);
-
-    void *getJpegConfig() { return reinterpret_cast<void *>(this); }
+    int create(void);
+    int destroy(void);
 
     int setJpegConfig(void* pConfig);
 
@@ -119,29 +187,66 @@ public:
 
     int getInBuf(int *piBuf, int *piInputSize, int iSize);
     int getOutBuf(int *piBuf, int *piOutputSize);
-    int getInBuf(char **pcBuf, int *piInputSize, int iSize);
-    int getOutBuf(char **pcBuf, int *piOutputSize);
 
     int setInBuf(int *piBuf, int *iSize);
     int setOutBuf(int iBuf, int iSize);
+
+    int getInBuf(char **pcBuf, int *piInputSize, int iSize);
+    int getOutBuf(char **pcBuf, int *piOutputSize);
+
     int setInBuf(char **pcBuf, int *iSize);
     int setOutBuf(char *pcBuf, int iSize);
 
     int getSize(int *piWidth, int *piHeight);
-    int setSize(int iW, int iH);
-    int setJpegFormat(int iV4l2JpegFormat);
     int getColorFormat(void);
     int setColorFormat(int iV4l2ColorFormat);
-    int setQuality(int iQuality);
-
-    int setQuality(const unsigned char q_table[]);
-
+    int setJpegFormat(int iV4l2JpegFormat);
     int setColorBufSize(int *piBufSize, int iSize);
+    int updateConfig(void);
+
+    int setQuality(int iQuality);
     int getJpegSize(void);
 
     int encode(void);
 };
 
-#endif //__HARDWARE_EXYNOS_EXYNOS_JPEG_API_H__
+/*
+ * ExynosJpegDecoder class
+ */
+class ExynosJpegDecoder : public ExynosJpegBase {
+public:
+    ExynosJpegDecoder();
+    virtual ~ExynosJpegDecoder();
 
-#endif //USES_UNIVERSAL_LIBHWJPEG
+    int create(void);
+    int destroy(void);
+
+    int setJpegConfig(void* pConfig);
+
+    int checkInBufType(void);
+    int checkOutBufType(void);
+
+    int getInBuf(int *piBuf, int *piInputSize);
+    int getOutBuf(int *picBuf, int *piOutputSize, int iSize);
+
+    int setInBuf(int iBuf, int iSize);
+    int setOutBuf(int *piBuf, int *iSize);
+
+    int getInBuf(char **pcBuf, int *piInputSize);
+    int getOutBuf(char **pcBuf, int *piOutputSize, int iSize);
+
+    int setInBuf(char *pcBuf, int iSize);
+    int setOutBuf(char **pcBuf, int *iSize);
+
+    int getSize(int *piWidth, int *piHeight);
+    int setColorFormat(int iV4l2ColorFormat);
+    int setJpegFormat(int iV4l2JpegFormat);
+    int updateConfig(void);
+
+    int setScaledSize(int iW, int iH);
+    int setJpegSize(int iJpegSize);
+
+    int decode(void);
+};
+
+#endif /* __EXYNOS_JPEG_BASE_H__ */

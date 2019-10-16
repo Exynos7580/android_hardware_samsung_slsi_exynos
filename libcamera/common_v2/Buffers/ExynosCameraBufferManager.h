@@ -35,8 +35,8 @@
 
 #include <binder/MemoryHeapBase.h>
 #include <ui/Fence.h>
-#include <linux/videodev2.h>
-#include <linux/videodev2_exynos_camera.h>
+#include <videodev2.h>
+#include <videodev2_exynos_camera.h>
 #include <ion/ion.h>
 
 #include "gralloc_priv.h"

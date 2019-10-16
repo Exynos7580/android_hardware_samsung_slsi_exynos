@@ -94,7 +94,7 @@ status_t ExynosCameraPipeVRA::startThread(void)
     status_t ret = NO_ERROR;
 
     if (m_gscThread->isRunning() == false) {
-        ret = m_gscThread->run("ExynosCamera1");
+        ret = m_gscThread->run();
         if (ret != NO_ERROR)
             CLOGE("ERR(%s[%d]):Internal GSC Pipe startThread fail!", __FUNCTION__, __LINE__);
         else
@@ -339,7 +339,7 @@ status_t ExynosCameraPipeVRA::m_runScaler(void)
     m_inputFrameQ->pushProcessQ(&newFrame);
 
     if (m_mainThread->isRunning() == false) {
-        m_mainThread->run("ExynosCmaera2");
+        m_mainThread->run();
         CLOGI("INFO(%s[%d]):startThread is succeed (%d)", __FUNCTION__, __LINE__, getPipeId());
     }
 

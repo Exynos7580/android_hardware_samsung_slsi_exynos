@@ -95,7 +95,7 @@ status_t ExynosCameraPipeJpeg::startThread(void)
         return INVALID_OPERATION;
     }
 
-    m_mainThread->run("ExynosCmaera4");
+    m_mainThread->run();
 
     CLOGI("INFO(%s[%d]):startThread is succeed (%d)", __FUNCTION__, __LINE__, getPipeId());
 
@@ -189,6 +189,7 @@ status_t ExynosCameraPipeJpeg::m_run(void)
         ret = INVALID_OPERATION;
         goto jpeg_encode_done;
     }
+
 
     if (m_jpegEnc.setSize(pictureRect.w, pictureRect.h)) {
         CLOGE("ERR(%s):m_jpegEnc.setSize() fail", __FUNCTION__);

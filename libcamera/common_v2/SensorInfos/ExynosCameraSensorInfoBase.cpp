@@ -69,9 +69,9 @@ int getSensorId(int camId)
     sensorId = curSensorId;
 #else
     if (camId == CAMERA_ID_BACK) {
-        sensorId = SENSOR_NAME_S5K3L2;//MAIN_CAMERA_SENSOR_NAME;
+        sensorId = MAIN_CAMERA_SENSOR_NAME;
     } else if (camId == CAMERA_ID_FRONT) {
-        sensorId = SENSOR_NAME_S5K5E3;//;
+        sensorId = FRONT_CAMERA_SENSOR_NAME;
     } else if (camId == CAMERA_ID_BACK_1) {
 #ifdef MAIN_1_CAMERA_SENSOR_NAME
         sensorId = MAIN_1_CAMERA_SENSOR_NAME;
@@ -775,9 +775,10 @@ ExynosSensorS5K3L2Base::ExynosSensorS5K3L2Base() : ExynosSensorInfoBase()
     zoomSupport = true;
     smoothZoomSupport = false;
     videoSnapshotSupport = true;
-    videoStabilizationSupport = false;
+    videoStabilizationSupport = true;
     autoWhiteBalanceLockSupport = true;
     autoExposureLockSupport = true;
+    visionModeSupport = true;
 
     antiBandingList =
           ANTIBANDING_AUTO

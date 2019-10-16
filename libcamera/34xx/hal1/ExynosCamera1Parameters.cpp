@@ -1100,6 +1100,7 @@ void ExynosCamera1Parameters::m_setRestartPreviewChecked(bool restart)
     Mutex::Autolock lock(m_parameterLock);
 
     m_flagRestartPreviewChecked = restart;
+
 }
 
 bool ExynosCamera1Parameters::m_getRestartPreviewChecked(void)
@@ -2205,8 +2206,7 @@ status_t ExynosCamera1Parameters::m_adjustPictureSize(int *newPictureW, int *new
          * (originally, this code is for less memory.
          *  but, reserved is already allocated on system
          *       non-reverved memory is not much different size.)
-         */
-        /*
+         */ /*
        int sizeList[SIZE_LUT_INDEX_END];
        if (m_getPreviewSizeList(sizeList) == NO_ERROR) {
            if (*newHwPictureW > sizeList[BCROP_W] || *newHwPictureH > sizeList[BCROP_H]) {
@@ -2214,8 +2214,8 @@ status_t ExynosCamera1Parameters::m_adjustPictureSize(int *newPictureW, int *new
                *newHwPictureH = sizeList[BCROP_H];
            }
        }
-       */
-    }
+	*/
+   }
 
     return NO_ERROR;
 }
@@ -5004,7 +5004,17 @@ void ExynosCamera1Parameters::setFlipVertical(int val)
 
 int ExynosCamera1Parameters::getFlipVertical(void)
 {
+#ifdef FRON_V_FLIP
+    if (getCameraId() == CAMERA_ID_FRONT) {
+	ALOGI("Fix fron vertical flip");
+	return 1;
+    }
+    else
+    	return m_cameraInfo.flipVertical;
+#else
     return m_cameraInfo.flipVertical;
+#endif
+
 }
 
 bool ExynosCamera1Parameters::getCallbackNeedCSC(void)
@@ -5062,10 +5072,8 @@ bool ExynosCamera1Parameters::setDeviceOrientation(int orientation)
     /* fd orientation need to be calibrated, according to f/w spec */
     int hwRotation = BACK_ROTATION;
 
-#if 0
     if (this->getCameraId() == CAMERA_ID_FRONT)
         hwRotation = FRONT_ROTATION;
-#endif
 
     int fdOrientation = (orientation + hwRotation) % 360;
 

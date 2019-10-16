@@ -97,9 +97,9 @@ static int HAL_camera_device_open(
     }
 
 #ifdef BOARD_FRONT_CAMERA_ONLY_USE
-    if ((unsigned int)cameraId <= (sizeof(sCameraInfo) / sizeof(sCameraInfo[0])))
+    if ((unsigned int)cameraId <= 2)
 #else
-    if ((unsigned int)cameraId < (sizeof(sCameraInfo) / sizeof(sCameraInfo[0])))
+    if ((unsigned int)cameraId < 2)
 #endif
     {
         if (g_cam_device[cameraId]) {
@@ -624,7 +624,7 @@ static int HAL_getNumberOfCameras()
     ExynosCameraAutoTimer autoTimer(__FUNCTION__);
 
     ALOGV("DEBUG(%s):", __FUNCTION__);
-    return sizeof(sCameraInfo) / sizeof(sCameraInfo[0]);
+    return 2;
 }
 
 static int HAL_set_callbacks(const camera_module_callbacks_t *callbacks)
@@ -650,8 +650,17 @@ static int HAL_getCameraInfo(int cameraId, struct camera_info *info)
         return -EINVAL;
     }
 
-    memcpy(info, &sCameraInfo[cameraId], sizeof(CameraInfo));
+    //memcpy(info, &sCameraInfo[cameraId], sizeof(CameraInfo));
     info->device_version = HARDWARE_DEVICE_API_VERSION(1, 0);
+
+    if (cameraId == 0) {
+        info->facing = CAMERA_FACING_BACK;
+        info->orientation = BACK_ROTATION;
+    }
+    else {
+        info->facing = CAMERA_FACING_FRONT;
+        info->orientation = FRONT_ROTATION;
+    }
 
     if (g_cam_info[cameraId] == NULL) {
         ALOGD("DEBUG(%s[%d]):Return static information (%d)", __FUNCTION__, __LINE__, cameraId);

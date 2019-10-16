@@ -146,7 +146,7 @@ status_t ExynosCameraPipeSTK_PICTURE::startThread(void)
         return INVALID_OPERATION;
     }
 
-    m_mainThread->run("ExynosCmaera7");
+    m_mainThread->run();
 
     CLOGI("INFO(%s[%d]):startThread is succeed (%d)", __FUNCTION__, __LINE__, getPipeId());
 

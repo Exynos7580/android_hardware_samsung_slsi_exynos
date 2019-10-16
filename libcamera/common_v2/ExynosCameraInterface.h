@@ -38,16 +38,20 @@
 
 namespace android {
 
+/*
+
 static CameraInfo sCameraInfo[] = {
     {
         CAMERA_FACING_BACK,
-        BACK_ROTATION  /* orientation */
+        BACK_ROTATION
     },
     {
         CAMERA_FACING_FRONT,
-        FRONT_ROTATION  /* orientation */
+        FRONT_ROTATION
     },
 };
+
+*/
 
 /* This struct used in device3.3 service arbitration */
 struct CameraConfigInfo {
