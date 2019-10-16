@@ -1,6 +1,6 @@
 /*
  * Copyright Samsung Electronics Co.,LTD.
- * Copyright (C) 2015 The Android Open Source Project
+ * Copyright (C) 2013 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,290 +15,214 @@
  * limitations under the License.
  */
 
-#include <linux/videodev2.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <sys/ioctl.h>
+#include <fcntl.h>
+#include <ctype.h>
+#include <unistd.h>
+#include <sys/mman.h>
+#include <string.h>
+#include <errno.h>
+#include <signal.h>
+#include <math.h>
+#include <sys/poll.h>
+#include <cutils/log.h>
+#include <utils/Log.h>
 
-#include <ExynosJpegApi.h>
+#include "ExynosJpegApi.h"
 
-#include "hwjpeg-internal.h"
+#define JPEG_ERROR_LOG(fmt,...)
 
-int ExynosJpegEncoder::setJpegConfig(void* pConfig)
+#define NUM_JPEG_ENC_IN_PLANES (1)
+#define NUM_JPEG_ENC_OUT_PLANES (1)
+#define NUM_JPEG_ENC_IN_BUFS (1)
+#define NUM_JPEG_ENC_OUT_BUFS (1)
+
+ExynosJpegEncoder::ExynosJpegEncoder()
 {
-    ExynosJpegEncoder *that = reinterpret_cast<ExynosJpegEncoder *>(pConfig);
-
-    if (!setColorFormat(that->m_v4l2Format))
-        return -1;
-
-    if (!setJpegFormat(that->m_jpegFormat))
-        return -1;
-
-    if (!setSize(that->m_nWidth, that->m_nHeight))
-        return -1;
-
-    m_iInBufType = that->m_iInBufType;
-    m_iOutBufType = that->m_iOutBufType;
-
-    return 0;
+    t_iJpegFd = -1;
+    t_bFlagCreate = false;
 }
 
-int ExynosJpegEncoder::getInBuf(int *piBuf, int *piInputSize, int iSize)
+ExynosJpegEncoder::~ExynosJpegEncoder()
 {
-    if (iSize < 1) {
-        ALOGE("Invalid array size %d for getInBuf()", iSize);
-        return -1;
-    }
-
-    size_t len_buffers[iSize];
-    if (!m_hwjpeg.GetImageBuffers(piBuf, len_buffers, static_cast<unsigned int>(iSize)))
-        return -1;
-
-    for (int i = 0; i < iSize; i++)
-        piInputSize[i] = static_cast<int>(len_buffers[i]);
-
-    return 0;
+    if (t_bFlagCreate == true)
+        this->destroy();
 }
 
-int ExynosJpegEncoder::getOutBuf(int *piBuf, int *piOutputSize)
+int ExynosJpegEncoder::create(void)
 {
-    size_t len;
-    if (!m_hwjpeg.GetJpegBuffer(piBuf, &len))
-        return -1;
-
-    *piOutputSize = static_cast<int>(len);
-    return 0;
+    return ExynosJpegBase::create(MODE_ENCODE);
 }
 
-int ExynosJpegEncoder::setInBuf(int *piBuf, int *iSize)
+int ExynosJpegEncoder::destroy(void)
 {
-    size_t buflen[3];
-    unsigned int bufnum = 3;
-
-    if (!EnsureFormatIsApplied())
-        return -1;
-
-    if (!m_hwjpeg.GetImageBufferSizes(buflen, &bufnum))
-        return -1;
-
-    for (unsigned int i = 0; i < bufnum; i++)
-        buflen[i] = static_cast<size_t>(iSize[i]);
-
-    if (!m_hwjpeg.SetImageBuffer(piBuf, buflen, bufnum))
-        return -1;
-
-    m_iInBufType = JPEG_BUF_TYPE_DMA_BUF;
-
-    return 0;
+    return ExynosJpegBase::destroy(NUM_JPEG_ENC_IN_BUFS, NUM_JPEG_ENC_OUT_BUFS);
 }
 
-int ExynosJpegEncoder::setOutBuf(int iBuf, int iSize)
+int ExynosJpegEncoder::setJpegConfig(void *pConfig)
 {
-    if (!m_hwjpeg.SetJpegBuffer(iBuf, static_cast<size_t>(iSize)))
-        return -1;
+    return ExynosJpegBase::setJpegConfig(MODE_ENCODE, pConfig);
+}
 
-    m_iOutBufType = JPEG_BUF_TYPE_DMA_BUF;
+int ExynosJpegEncoder::checkInBufType(void)
+{
+    return checkBufType(&t_stJpegInbuf);
+}
 
-    return 0;
+int ExynosJpegEncoder::checkOutBufType(void)
+{
+    return checkBufType(&t_stJpegOutbuf);
 }
 
 int ExynosJpegEncoder::getInBuf(char **pcBuf, int *piInputSize, int iSize)
 {
-    if (iSize < 1) {
-        ALOGE("Invalid array size %d for getInBuf()", iSize);
-        return -1;
-    }
-
-    size_t len_buffers[iSize];
-    if (!m_hwjpeg.GetImageBuffers(pcBuf, len_buffers, static_cast<unsigned int>(iSize)))
-        return -1;
-
-    for (int i = 0; i < iSize; i++)
-        piInputSize[i] = static_cast<int>(len_buffers[i]);
-
-    return 0;
+    return getBuf(t_bFlagCreateInBuf, &t_stJpegInbuf, pcBuf, piInputSize, iSize, t_iPlaneNum);
 }
 
 int ExynosJpegEncoder::getOutBuf(char **pcBuf, int *piOutputSize)
 {
-    size_t len;
-    if (!m_hwjpeg.GetJpegBuffer(pcBuf, &len))
-        return -1;
-
-    *piOutputSize = static_cast<int>(len);
-    return 0;
+    return getBuf(t_bFlagCreateOutBuf, &t_stJpegOutbuf, pcBuf, piOutputSize,
+                    NUM_JPEG_ENC_OUT_PLANES, NUM_JPEG_ENC_OUT_PLANES);
 }
 
 int ExynosJpegEncoder::setInBuf(char **pcBuf, int *iSize)
 {
-    size_t buflen[3];
-    unsigned int bufnum = 3;
+    int iRet = ERROR_NONE;
+    iRet = setBuf(&t_stJpegInbuf, pcBuf, iSize, t_iPlaneNum);
 
-    if (!EnsureFormatIsApplied())
-        return -1;
+    if (iRet == ERROR_NONE)
+        t_bFlagCreateInBuf = true;
 
-    if (!m_hwjpeg.GetImageBufferSizes(buflen, &bufnum))
-        return -1;
-
-    for (unsigned int i = 0; i < bufnum; i++)
-        buflen[i] = static_cast<size_t>(iSize[i]);
-
-    if (!m_hwjpeg.SetImageBuffer(pcBuf, buflen, bufnum))
-        return -1;
-
-    m_iInBufType = JPEG_BUF_TYPE_USER_PTR;
-    return 0;
+    return iRet;
 }
 
-int ExynosJpegEncoder::setOutBuf(char *pcBuf, int iSize)
+int  ExynosJpegEncoder::setOutBuf(char *pcBuf, int iSize)
 {
-    if (!m_hwjpeg.SetJpegBuffer(pcBuf, static_cast<size_t>(iSize)))
-        return -1;
+    int iRet = ERROR_NONE;
+    iRet = setBuf(&t_stJpegOutbuf, &pcBuf, &iSize, NUM_JPEG_ENC_OUT_PLANES);
 
-    m_iOutBufType = JPEG_BUF_TYPE_USER_PTR;
+    if (iRet == ERROR_NONE)
+        t_bFlagCreateOutBuf = true;
 
-    return 0;
+    return iRet;
+}
+
+int ExynosJpegEncoder::getInBuf(int *piBuf, int *piInputSize, int iSize)
+{
+    return getBuf(t_bFlagCreateInBuf, &t_stJpegInbuf, piBuf, piInputSize, iSize, t_iPlaneNum);
+}
+
+int ExynosJpegEncoder::getOutBuf(int *piBuf, int *piOutputSize)
+{
+    return getBuf(t_bFlagCreateOutBuf, &t_stJpegOutbuf, piBuf, piOutputSize,
+                    NUM_JPEG_ENC_OUT_PLANES, NUM_JPEG_ENC_OUT_PLANES);
+}
+
+int ExynosJpegEncoder::setInBuf(int *piBuf, int *iSize)
+{
+    int iRet = ERROR_NONE;
+    iRet = setBuf(&t_stJpegInbuf, piBuf, iSize, t_iPlaneNum);
+
+    if (iRet == ERROR_NONE)
+        t_bFlagCreateInBuf = true;
+
+    return iRet;
+}
+
+int ExynosJpegEncoder::setOutBuf(int piBuf, int iSize)
+{
+    int iRet = ERROR_NONE;
+    iRet = setBuf(&t_stJpegOutbuf, &piBuf, &iSize, NUM_JPEG_ENC_OUT_PLANES);
+
+    if (iRet == ERROR_NONE)
+        t_bFlagCreateOutBuf = true;
+
+    return iRet;
+}
+
+int ExynosJpegEncoder::getSize(int *piW, int *piH)
+{
+    if (t_bFlagCreate == false)
+        return ERROR_JPEG_DEVICE_NOT_CREATE_YET;
+
+    if (t_stJpegConfig.width == 0 && t_stJpegConfig.height == 0)
+        return ERROR_SIZE_NOT_SET_YET;
+
+    *piW = t_stJpegConfig.width;
+    *piH = t_stJpegConfig.height;
+
+    return ERROR_NONE;
+}
+
+int ExynosJpegEncoder::getColorFormat(void)
+{
+    return t_stJpegConfig.pix.enc_fmt.in_fmt;
+}
+
+int ExynosJpegEncoder::setColorFormat(int iV4l2ColorFormat)
+{
+    return ExynosJpegBase::setColorFormat(MODE_ENCODE, iV4l2ColorFormat);
 }
 
 int ExynosJpegEncoder::setJpegFormat(int iV4l2JpegFormat)
 {
-    if (m_jpegFormat == iV4l2JpegFormat)
-        return 0;
-
-    unsigned int hfactor, vfactor;
-    switch (iV4l2JpegFormat) {
-        case V4L2_PIX_FMT_JPEG_444:
-            hfactor = 1;
-            vfactor = 1;
-            break;
-        case V4L2_PIX_FMT_JPEG_422:
-            hfactor = 2;
-            vfactor = 1;
-            break;
-        case V4L2_PIX_FMT_JPEG_420:
-            hfactor = 2;
-            vfactor = 2;
-            break;
-        case V4L2_PIX_FMT_JPEG_GRAY:
-            hfactor = 0;
-            vfactor = 0;
-            break;
-        case V4L2_PIX_FMT_JPEG_422V:
-            hfactor = 1;
-            vfactor = 2;
-            break;
-        case V4L2_PIX_FMT_JPEG_411:
-            hfactor = 4;
-            vfactor = 1;
-            break;
-        default:
-            ALOGE("Unknown JPEG format `%08Xh", iV4l2JpegFormat);
-            return -1;
-    }
-
-    if (!m_hwjpeg.SetChromaSampFactor(hfactor, vfactor))
-        return -1;
-
-    m_jpegFormat = iV4l2JpegFormat;
-
-    return 0;
+    return ExynosJpegBase::setJpegFormat(MODE_ENCODE, iV4l2JpegFormat);
 }
 
 int ExynosJpegEncoder::setColorBufSize(int *piBufSize, int iSize)
 {
-    size_t len[3];
-    unsigned int num = static_cast<unsigned int>(iSize);
-
-    if (!m_hwjpeg.GetImageBufferSizes(len, &num))
-        return -1;
-
-    for (unsigned int i = 0; i < num; i++)
-        piBufSize[i] = static_cast<int>(len[i]);
-
-    return 0;
+    return ExynosJpegBase::setColorBufSize(MODE_ENCODE, piBufSize, iSize);
 }
 
-bool ExynosJpegEncoder::__EnsureFormatIsApplied() {
-    if (TestStateEither(STATE_SIZE_CHANGED | STATE_PIXFMT_CHANGED) &&
-            !m_hwjpeg.SetImageFormat(m_v4l2Format, m_nWidth, m_nHeight))
-        return false;
-
-    ClearState(STATE_SIZE_CHANGED | STATE_PIXFMT_CHANGED);
-    return true;
+int ExynosJpegEncoder::updateConfig(void)
+{
+    return ExynosJpegBase::updateConfig(MODE_ENCODE,
+                    NUM_JPEG_ENC_IN_BUFS, NUM_JPEG_ENC_OUT_BUFS,
+                    NUM_JPEG_ENC_IN_PLANES, NUM_JPEG_ENC_OUT_PLANES);
 }
 
-static unsigned char jpeg_zigzagorder[] = {
-     0,  1,  8, 16,  9,  2,  3, 10,
-    17, 24, 32, 25, 18, 11,  4,  5,
-    12, 19, 26, 33, 40, 48, 41, 34,
-    27, 20, 13,  6,  7, 14, 21, 28,
-    35, 42, 49, 56, 57, 50, 43, 36,
-    29, 22, 15, 23, 30, 37, 44, 51,
-    58, 59, 52, 45, 38, 31, 39, 46,
-    53, 60, 61, 54, 47, 55, 62, 63
-};
+int ExynosJpegEncoder::setQuality(int iV4l2Quality)
+{
+    if (t_bFlagCreate == false)
+        return ERROR_JPEG_DEVICE_NOT_CREATE_YET;
 
-int ExynosJpegEncoder::setQuality(const unsigned char q_table[]) {
-    unsigned char qtbl[128];
+    if (iV4l2Quality >= 96)
+        t_stJpegConfig.enc_qual = QUALITY_LEVEL_1;
+    else if (iV4l2Quality >= 92)
+        t_stJpegConfig.enc_qual = QUALITY_LEVEL_2;
+    else if (iV4l2Quality >= 38)
+        t_stJpegConfig.enc_qual = QUALITY_LEVEL_4;
+    else if (iV4l2Quality >= 30)
+        t_stJpegConfig.enc_qual = QUALITY_LEVEL_5;
+    else
+        t_stJpegConfig.enc_qual = QUALITY_LEVEL_6;
 
-    for (unsigned int i = 0; i < ARRSIZE(jpeg_zigzagorder); i++)
-        qtbl[i] = q_table[jpeg_zigzagorder[i]];
+    t_stJpegConfig.enc_qual = iV4l2Quality;
 
-    for (unsigned int i = 0; i < ARRSIZE(jpeg_zigzagorder); i++)
-        qtbl[i + 64] = q_table[jpeg_zigzagorder[i] + 64];
-
-    if (!m_hwjpeg.SetQuality(qtbl))
-        return -1;
-
-    return 0;
+    return ERROR_NONE;
 }
 
-
-int ExynosJpegEncoder::checkInBufType(void) { return m_iInBufType; }
-int ExynosJpegEncoder::checkOutBufType(void) { return m_iOutBufType; }
-int ExynosJpegEncoder::getJpegSize(void) { return m_nStreamSize; }
-int ExynosJpegEncoder::getColorFormat(void) { return m_v4l2Format; }
-int ExynosJpegEncoder::encode(void) {
-        if (!__EnsureFormatIsApplied())
-            return false;
-
-        m_nStreamSize = static_cast<int>(m_hwjpeg.Compress());
-        return (m_nStreamSize < 0) ? -1 : 0;
-}
-int ExynosJpegEncoder::setQuality(int iQuality) {
-        if (m_nQFactor != iQuality) {
-            if (!m_hwjpeg.SetQuality(static_cast<unsigned int>(iQuality)))
-                return -1;
-            m_nQFactor = iQuality;
-        }
+int ExynosJpegEncoder::getJpegSize(void)
+{
+    if (t_bFlagCreate == false)
         return 0;
-}
-int ExynosJpegEncoder::setSize(int iW, int iH) {
-        if ((m_nWidth != iW) || (m_nHeight != iH)) {
-            m_nWidth = iW;
-            m_nHeight = iH;
-            SetState(STATE_SIZE_CHANGED);
-        }
+
+    int iSize = -1;
+    iSize = t_stJpegConfig.sizeJpeg;
+
+    if (iSize < 0) {
+        JPEG_ERROR_LOG("%s::Fail to JPEG output buffer!!\n", __func__);
         return 0;
+    }
+
+    return iSize;
 }
-int ExynosJpegEncoder::setColorFormat(int iV4l2ColorFormat) {
-        if (iV4l2ColorFormat != m_v4l2Format) {
-            m_v4l2Format = iV4l2ColorFormat;
-            SetState(STATE_PIXFMT_CHANGED);
-        }
-        return 0;
-}
-int ExynosJpegEncoder::getSize(int *piWidth, int *piHeight) {
-        *piWidth = m_nWidth;
-        *piHeight = m_nHeight;
-        return 0;
-}
-int ExynosJpegEncoder::flagCreate() { return m_hwjpeg.Okay() ? 0 : -1; }
-int ExynosJpegEncoder::setCache(int val) { val = val; return 0; }
-int ExynosJpegEncoder::updateConfig(void) { return 0; }
-int ExynosJpegEncoder::create(void) { return flagCreate(); }
-int ExynosJpegEncoder::destroy(void) { return 0; }
-ExynosJpegEncoder::ExynosJpegEncoder(): m_hwjpeg(),
-          m_iInBufType(JPEG_BUF_TYPE_USER_PTR), m_iOutBufType(JPEG_BUF_TYPE_USER_PTR), m_uiState(0),
-          m_nQFactor(0), m_nWidth(0), m_nHeight(0), m_v4l2Format(0), m_jpegFormat(0), m_nStreamSize(0)
-    {
-        /* To detect setInBuf() call without format setting */
-        SetState(STATE_SIZE_CHANGED | STATE_PIXFMT_CHANGED);
+
+int ExynosJpegEncoder::encode(void)
+{
+    return ExynosJpegBase::execute(t_iPlaneNum, NUM_JPEG_ENC_OUT_PLANES);
 }

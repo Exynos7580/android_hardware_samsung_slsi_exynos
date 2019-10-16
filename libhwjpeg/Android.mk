@@ -1,4 +1,4 @@
-# Copyright (C) 2015 The Android Open Source Project
+# Copyright (C) 2013 The Android Open Source Project
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,20 +15,25 @@
 LOCAL_PATH:= $(call my-dir)
 include $(CLEAR_VARS)
 
-LOCAL_CFLAGS += -DLOG_TAG=\"exynos-libhwjpeg\"
-
-LOCAL_SHARED_LIBRARIES := liblog libutils libcutils libcsc libion
-
-LOCAL_C_INCLUDES := $(TOP)/hardware/samsung_slsi/exynos/include \
-                    $(TOP)/system/core/libion/include
-
-LOCAL_SRC_FILES := hwjpeg-base.cpp hwjpeg-v4l2.cpp libhwjpeg-exynos.cpp
-ifeq ($(TARGET_USES_UNIVERSAL_LIBHWJPEG), true)
-LOCAL_SRC_FILES += ExynosJpegEncoder.cpp libcsc.cpp AppMarkerWriter.cpp ExynosJpegEncoderForCamera.cpp
-endif
-
 LOCAL_MODULE_TAGS := optional
+
 LOCAL_MODULE := libhwjpeg
 
-include $(TOP)/hardware/samsung_slsi/exynos/BoardConfigCFlags.mk
+LOCAL_C_INCLUDES := \
+	$(LOCAL_PATH)/../include \
+	$(TOP)/hardware/samsung_slsi/exynos/libexynosutils \
+	$(TOP)/hardware/samsung_slsi/exynos/include
+
+LOCAL_SRC_FILES := \
+	ExynosJpegEncoder.cpp \
+	ExynosJpegDecoder.cpp \
+	ExynosJpegBase.cpp \
+	ExynosJpegBase_Dependence.cpp
+
+LOCAL_SHARED_LIBRARIES := \
+	libutils \
+	liblog \
+	libexynosutils \
+	libion
+
 include $(BUILD_SHARED_LIBRARY)
