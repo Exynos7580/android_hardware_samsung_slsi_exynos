@@ -26,7 +26,6 @@
 #include "ExynosCameraThread.h"
 
 #include "sys/mman.h"
-#include "exynos2_ion.h"
 #include "ion/ion.h"
 
 #define APP_MARKER_4                4
